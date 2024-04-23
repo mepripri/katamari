@@ -1,0 +1,11 @@
+Model Information:
+* title:	marshmallow cupcake
+* source:	https://sketchfab.com/3d-models/marshmallow-cupcake-2645a919288b45ad8a83b84861455bb3
+* author:	hanjisung42698 (https://sketchfab.com/hanjisung42698)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "marshmallow cupcake" (https://sketchfab.com/3d-models/marshmallow-cupcake-2645a919288b45ad8a83b84861455bb3) by hanjisung42698 (https://sketchfab.com/hanjisung42698) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

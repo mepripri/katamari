@@ -1,6 +1,48 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 let renderer, scene, camera;
+const cupcakePositions = [
+  new THREE.Vector3(10, 1, 5),
+  new THREE.Vector3(-15, 1, 20),
+  new THREE.Vector3(0, 1, -25),
+  new THREE.Vector3(30, 1, 15),
+  new THREE.Vector3(-20, 1, 10),
+];
+
+const donutPositions = [
+  new THREE.Vector3(5, 0, -30),
+  new THREE.Vector3(25, 0, -5),
+  new THREE.Vector3(-10, 0, -15),
+  new THREE.Vector3(20, 0, 25),
+  new THREE.Vector3(-25, 0, -20),
+];
+
+const cupcakeOrangePositions = [
+  new THREE.Vector3(15, 1, 0),
+  new THREE.Vector3(-5, 1, 30),
+  new THREE.Vector3(35, 1, -10),
+  new THREE.Vector3(-30, 1, 5),
+  new THREE.Vector3(10, 1, -35),
+];
+
+const cupcakeMarshmallowPositions = [
+  new THREE.Vector3(40, 1, 0),
+  new THREE.Vector3(-35, 1, 15),
+  new THREE.Vector3(0, 1, 35),
+  new THREE.Vector3(30, 1, -25),
+  new THREE.Vector3(-40, 1, -5),
+];
+
+const numCupcakes = 5;
+const numDonuts = 5;
+const numCupcakeOrange = 5;
+const numCupcakeMarshmallow = 5;
+const planeSize = 95;
+const planeSizeFront = 97.5;
+let cameraDistance = 10
+const clock = new THREE.Clock();
+let delta = 0;
 
 window.init = async (canvas) => {
   scene = new THREE.Scene();
@@ -35,10 +77,10 @@ window.init = async (canvas) => {
   scene.add(light);
 
   const groundGeometry = new THREE.PlaneGeometry(100, 100);
-  const texturePlane = new THREE.TextureLoader().load("assets/grass3.webp");
-  texturePlane.wrapS = THREE.RepeatWrapping;
-  texturePlane.wrapT = THREE.RepeatWrapping;
-  texturePlane.repeat.set(6, 6);
+  const texturePlane = new THREE.TextureLoader().load("assets/river.png");
+  texturePlane.wrapS = THREE.MirroredRepeatWrapping;
+  texturePlane.wrapT = THREE.MirroredRepeatWrapping;
+  texturePlane.repeat.set(10, 10);
   const materialPlane = new THREE.MeshPhongMaterial({
     map: texturePlane,
   });
@@ -47,6 +89,7 @@ window.init = async (canvas) => {
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
+
   const geometry = new THREE.SphereGeometry(2, 32, 32);
   const texture = new THREE.TextureLoader().load("assets/chocolate.avif");
   texture.wrapS = THREE.RepeatWrapping;
@@ -55,40 +98,133 @@ window.init = async (canvas) => {
   const material = new THREE.MeshPhongMaterial({
     map: texture,
   });
+
   const sphere = new THREE.Mesh(geometry, material);
   sphere.name = "sphere";
-  sphere.position.y = 2;
+  sphere.position.y = 1;
   sphere.castShadow = true;
   scene.add(sphere);
 
-  camera.position.set(0, 10, 20);
-  camera.lookAt(sphere.position);
+  const loader = new GLTFLoader().setPath("models/gltf/");
 
-  console.log("made a scene", scene);
+  for (let i = 0; i < numCupcakes; i++) {
+    loader.load("scene.gltf", (gltf) => {
+      gltf.scene.scale.set(1.5, 1.5, 1.5);
+      gltf.scene.position.copy(cupcakePositions[i]);
+      scene.add(gltf.scene);
+    });
+  }
+
+  const loader2 = new GLTFLoader().setPath("models/chocolate_donut/");
+
+  for (let i = 0; i < numDonuts; i++) {
+    loader2.load("scene.gltf", (gltf) => {
+      gltf.scene.scale.set(6, 6, 6);
+      gltf.scene.position.copy(donutPositions[i]);
+      scene.add(gltf.scene);
+    });
+  }
+
+  const loader3 = new GLTFLoader().setPath("models/cupcake_orange/");
+
+  for (let i = 0; i < numCupcakeOrange; i++) {
+    loader3.load("scene.gltf", (gltf) => {
+      gltf.scene.scale.set(15, 15, 15);
+      gltf.scene.position.copy(cupcakeOrangePositions[i]);
+      scene.add(gltf.scene);
+    });
+  }
+
+  const loader4 = new GLTFLoader().setPath("models/marshmallow_cupcake/");
+
+  for (let i = 0; i < numCupcakeMarshmallow; i++) {
+    loader4.load("scene.gltf", (gltf) => {
+      gltf.scene.scale.set(10, 10, 10);
+      gltf.scene.position.copy(cupcakeMarshmallowPositions[i]);
+      scene.add(gltf.scene);
+    });
+  }
+
+  camera.position.set(0, 10, 20);
+  camera.lookAt(0, 0, 0);
+
+  console.log("made a scene");
 };
 
-let speed = 0.02;
-const planeSize = 95;
-let cameraDistance = 10;
+function showGameOver() {
+  const gameOverOverlay = document.getElementById("gameOverOverlay");
+  if (gameOverOverlay) {
+    gameOverOverlay.style.display = "block";
+  }
+}
+let cupcakesCollected = 0;
+let gameRunning = true;
 
 window.loop = (dt, canvas, input) => {
+  if (!gameRunning) {
+    return;
+  }
+
   const sphere = scene.getObjectByName("sphere");
 
-  if (input.keys.has("ArrowUp") && sphere.position.z > -planeSize / 2) {
-    sphere.position.z -= speed * dt;
-    sphere.rotation.y -= speed * dt;
+  delta = clock.getDelta();
+
+  const cupcakeObjects = scene.children.filter((obj) => obj.type === "Group");
+  for (const cupcake of cupcakeObjects) {
+    if (
+      sphere.position.distanceTo(cupcake.position) < 2.5 &&
+      !cupcake.isAttached
+    ) {
+      const originalScale = cupcake.scale.clone();
+      const pickedPosition = sphere.position
+        .clone()
+        .add(sphere.worldToLocal(cupcake.position));
+      sphere.add(cupcake);
+      cupcake.isAttached = true;
+      cupcake.scale.copy(originalScale);
+      cupcakesCollected++;
+      if (
+        cupcakesCollected >=
+        numCupcakes + numDonuts + numCupcakeOrange + numCupcakeMarshmallow
+      ) {
+        gameRunning = false;
+        showGameOver();
+        break;
+      }
+      const currentScale = sphere.scale.x;
+      const scaleIncrement = 0.03;
+      sphere.scale.set(
+        currentScale + scaleIncrement,
+        currentScale + scaleIncrement,
+        currentScale + scaleIncrement
+      );
+    }
   }
-  if (input.keys.has("ArrowDown") && sphere.position.z < planeSize / 2) {
-    sphere.position.z += speed * dt;
-    sphere.rotation.y += speed * dt;
-  }
-  if (input.keys.has("ArrowLeft") && sphere.position.x > -planeSize / 2) {
-    sphere.position.x -= speed * dt;
-    sphere.rotation.y -= speed * dt;
-  }
-  if (input.keys.has("ArrowRight") && sphere.position.x < planeSize / 2) {
-    sphere.position.x += speed * dt;
-    sphere.rotation.y += speed * dt;
+
+  const moveSpeed = 15;
+  const rotationSpeed = 5;
+
+  let moveDirection = new THREE.Vector3();
+  if (input.keys.has("ArrowUp") && sphere.position.z > -planeSize / 2)
+    moveDirection.z = -1;
+  if (input.keys.has("ArrowDown") && sphere.position.z < planeSizeFront / 2)
+    moveDirection.z = 1;
+  if (input.keys.has("ArrowLeft") && sphere.position.x > -planeSize / 2)
+    moveDirection.x = -1;
+  if (input.keys.has("ArrowRight") && sphere.position.x < planeSize / 2)
+    moveDirection.x = 1;
+
+  moveDirection.normalize().multiplyScalar(moveSpeed * delta);
+  sphere.position.add(moveDirection);
+
+  if (moveDirection.x !== 0 || moveDirection.z !== 0) {
+    const axis = new THREE.Vector3(
+      moveDirection.z,
+      0,
+      -moveDirection.x
+    ).normalize();
+    const angle = rotationSpeed * delta;
+    sphere.rotateOnAxis(axis, angle);
   }
 
   camera.position.x = sphere.position.x;
