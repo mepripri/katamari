@@ -23,7 +23,7 @@ const loop = (time) => {
 
   // Resize the canvas to fill the screen.
   if (_canvas) {
-    _canvas.width = _canvas.clientWidth
+    _canvas.width = _canvas.clientWidth;
     _canvas.height = _canvas.clientHeight;
   }
 
@@ -31,7 +31,7 @@ const loop = (time) => {
   if (!_hasInited) {
     if (window.init) {
       _hasInited = true;
-      
+
       window.init(_canvas);
     }
   }
@@ -47,9 +47,9 @@ const loop = (time) => {
 // Adds a script tag to the DOM with our solution.
 const attachScript = () => {
   const url = `./src/solution.js`;
-  const scriptTag = document.createElement('script');
+  const scriptTag = document.createElement("script");
   scriptTag.src = url;
-  scriptTag.type = 'module';
+  scriptTag.type = "module";
   document.head.appendChild(scriptTag);
 };
 
@@ -73,14 +73,14 @@ window.loadShader = async ({ gl, name, type }) => {
 // See: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers/onload)
 window.onload = () => {
   // get the <canvas /> DOM element
-  _canvas = document.getElementById('canvas');
+  _canvas = document.getElementById("canvas");
 
   // add handlers
-  document.addEventListener('keydown', (event) => {
+  document.addEventListener("keydown", (event) => {
     const key = event.key;
     _input.keys.add(key);
   });
-  document.addEventListener('keyup', (event) => {
+  document.addEventListener("keyup", (event) => {
     const key = event.key;
     _input.keys.delete(key);
   });

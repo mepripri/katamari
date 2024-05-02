@@ -38,10 +38,13 @@ const numCupcakes = 5;
 const numDonuts = 5;
 const numCupcakeOrange = 5;
 const numCupcakeMarshmallow = 5;
-const planeSize = 95;
-const planeSizeFront = 97.5;
-let cameraDistance = 10
-const clock = new THREE.Clock();
+const planeSize = 95.5;
+const planeSizeFront = 96.5;
+let cameraDistance = 10;
+const v0 = new THREE.Vector3();
+const q = new THREE.Quaternion();
+const angularVelocity = new THREE.Vector3();
+
 let delta = 0;
 
 window.init = async (canvas) => {
@@ -92,9 +95,6 @@ window.init = async (canvas) => {
 
   const geometry = new THREE.SphereGeometry(2, 32, 32);
   const texture = new THREE.TextureLoader().load("assets/chocolate.avif");
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(2, 2);
   const material = new THREE.MeshPhongMaterial({
     map: texture,
   });
@@ -161,13 +161,13 @@ let cupcakesCollected = 0;
 let gameRunning = true;
 
 window.loop = (dt, canvas, input) => {
+  delta = Math.min(dt, 0.03);
+
   if (!gameRunning) {
     return;
   }
 
   const sphere = scene.getObjectByName("sphere");
-
-  delta = clock.getDelta();
 
   const cupcakeObjects = scene.children.filter((obj) => obj.type === "Group");
   for (const cupcake of cupcakeObjects) {
@@ -176,9 +176,8 @@ window.loop = (dt, canvas, input) => {
       !cupcake.isAttached
     ) {
       const originalScale = cupcake.scale.clone();
-      const pickedPosition = sphere.position
-        .clone()
-        .add(sphere.worldToLocal(cupcake.position));
+      const pickedPosition = sphere.worldToLocal(cupcake.position.clone());
+      cupcake.position.copy(pickedPosition);
       sphere.add(cupcake);
       cupcake.isAttached = true;
       cupcake.scale.copy(originalScale);
@@ -201,31 +200,38 @@ window.loop = (dt, canvas, input) => {
     }
   }
 
-  const moveSpeed = 15;
-  const rotationSpeed = 5;
+  const maxX = planeSize / 2;
+  const minX = -maxX;
+  const maxZ = planeSizeFront / 2;
+  const minZ = -maxZ;
 
-  let moveDirection = new THREE.Vector3();
-  if (input.keys.has("ArrowUp") && sphere.position.z > -planeSize / 2)
-    moveDirection.z = -1;
-  if (input.keys.has("ArrowDown") && sphere.position.z < planeSizeFront / 2)
-    moveDirection.z = 1;
-  if (input.keys.has("ArrowLeft") && sphere.position.x > -planeSize / 2)
-    moveDirection.x = -1;
-  if (input.keys.has("ArrowRight") && sphere.position.x < planeSize / 2)
-    moveDirection.x = 1;
-
-  moveDirection.normalize().multiplyScalar(moveSpeed * delta);
-  sphere.position.add(moveDirection);
-
-  if (moveDirection.x !== 0 || moveDirection.z !== 0) {
-    const axis = new THREE.Vector3(
-      moveDirection.z,
-      0,
-      -moveDirection.x
-    ).normalize();
-    const angle = rotationSpeed * delta;
-    sphere.rotateOnAxis(axis, angle);
+  if (sphere.position.x <= minX || sphere.position.x >= maxX) {
+    angularVelocity.z = 0;
   }
+  if (sphere.position.z <= minZ || sphere.position.z >= maxZ) {
+    angularVelocity.x = 0;
+  }
+
+  if (input.keys.has("ArrowUp") && sphere.position.z > minZ) {
+    angularVelocity.x -= delta * 5;
+  }
+  if (input.keys.has("ArrowDown") && sphere.position.z < maxZ) {
+    angularVelocity.x += delta * 5;
+  }
+  if (input.keys.has("ArrowLeft") && sphere.position.x > minX) {
+    angularVelocity.z += delta * 5;
+  }
+  if (input.keys.has("ArrowRight") && sphere.position.x < maxX) {
+    angularVelocity.z -= delta * 5;
+  }
+
+  q.setFromAxisAngle(angularVelocity, delta).normalize();
+  sphere.applyQuaternion(q);
+
+  angularVelocity.lerp(v0, 0.01);
+
+  sphere.position.x -= angularVelocity.z * delta;
+  sphere.position.z += angularVelocity.x * delta;
 
   camera.position.x = sphere.position.x;
   camera.position.z = sphere.position.z + cameraDistance;
